@@ -1,5 +1,6 @@
 using DarkRift.Server;
 using DarkRift;
+using System;
 
 namespace DarkRiftRPG
 {
@@ -9,13 +10,14 @@ namespace DarkRiftRPG
         public IClient Client;
         public string PlayFabID;
 
+
         public PlayFabCharacterData CurrentCharacterData;
         public ConnectedClient(IClient client, string playfabID)
         {
             Client = client;
             ClientID = client.ID;
             PlayFabID = playfabID;
-
+            CurrentCharacterData = new PlayFabCharacterData();
             Client.MessageReceived += OnMessage;
         }
 
@@ -46,7 +48,7 @@ namespace DarkRiftRPG
 
         private void OnJoinGameAsCharacterRequest(JoinGameAsCharacterRequestData data)
         {
-            PlayFabAPICaller.Instance.TryRetrieveCharacterData(ClientID, PlayFabID, data.CharacterID);
+            PlayFabAPICaller.Instance.TryRetrieveAllPlayerCharacters(ClientID, PlayFabID, data.CharacterID);;
         }
 
         private void OnPlayerMovementRequest(PlayerMovementRequestData data)

@@ -26,19 +26,20 @@ namespace DarkRiftRPG
             Instance = this;
         }
 
-        public void SpawnPlayerOnServer(ushort clientID, string characterName)
+        public void SpawnPlayerOnServer(ushort clientID, PlayFabCharacterData characterData)
         {
             if (!CurrentPlayers.ContainsKey(clientID))
             {
-                GameObject go = InstantiateAndAddPlayer(clientID);
 
-                PlayerSpawnData data = new PlayerSpawnData(clientID, go.transform.position, characterName);
-                ServerManager.Instance.SendToClient(data.ID, Tags.SpawnPlayer, data);
+                InstantiateAndAddPlayer(clientID, characterData.WorldPosition);
 
-                ServerPlayerController controller = CurrentPlayers[clientID].GetComponent<ServerPlayerController>();
-                ServerManager.Instance.SendNewPlayerToOthers(clientID, controller.transform.position, characterName);
+                PlayerSpawnData spawnData = new PlayerSpawnData(
+                    clientID,
+                    characterData.WorldPosition,
+                    characterData.CharacterName
+                    );
 
-                ServerManager.Instance.SendOthersToNewPlayer(clientID, CurrentPlayers);
+                SyncronizePlayerCharacterOnClients(spawnData);
 
             }
             else
@@ -47,10 +48,20 @@ namespace DarkRiftRPG
             }
         }
 
-
-        private GameObject InstantiateAndAddPlayer(ushort clientID)
+        private void SyncronizePlayerCharacterOnClients(PlayerSpawnData spawnData)
         {
-            GameObject go = Instantiate(ServerPlayerPrefab, ServerPlayerPrefab.transform.position, Quaternion.identity);
+            ServerManager.Instance.SendToClient(spawnData.ID, Tags.SpawnPlayer, spawnData);
+
+            ServerManager.Instance.SendNewPlayerToOthers(spawnData.ID, spawnData.Position, spawnData.PlayerCharacterName);
+
+            ServerManager.Instance.SendOthersToNewPlayer(spawnData.ID, CurrentPlayers);
+        }
+
+        private GameObject InstantiateAndAddPlayer(ushort clientID, Vector3 spawnPosition)
+        {
+            if (CurrentPlayers.ContainsKey(clientID)) return new GameObject();
+            Debug.Log("Instantiting player on server at position: " + spawnPosition.ToString());
+            GameObject go = Instantiate(ServerPlayerPrefab, spawnPosition, Quaternion.identity);
             CurrentPlayers.Add(clientID, go);
 
             return go;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DarkRift;
 using DarkRift.Server;
@@ -34,9 +35,34 @@ namespace DarkRiftRPG
        
         private void OnClientDisconnected(object sender, ClientDisconnectedEventArgs e)
         {
+            SaveCharacterWorldStateInPlayfab(e);
+
             RemovePlayerFromServer(e);
             SendToAllExcept(e.Client.ID, Tags.DespawnPlayer, new PlayerDespawnData(e.Client.ID));
         }
+
+        private void SaveCharacterWorldStateInPlayfab(ClientDisconnectedEventArgs e)
+        {
+            Debug.Log("Client quit game");
+            if (PlayerManager.Instance.CurrentPlayers.ContainsKey(e.Client.ID))
+            {
+                GameObject character = PlayerManager.Instance.CurrentPlayers[e.Client.ID].gameObject;
+                PlayFabCharacterData characterData = ConnectedClients[e.Client.ID].CurrentCharacterData;
+                characterData.WorldPosition = character.transform.position;
+
+                Debug.Log("actual character data? Position should not be 0,0,0");
+                Debug.Log(ConnectedClients[e.Client.ID].CurrentCharacterData.WorldPosition);
+
+                characterData.IsInitialCharacterData = false;
+
+                PlayFabAPICaller.Instance.TrySaveCharacterData(characterData);
+            } else
+            {
+                Debug.Log("Client Key not found in CurrentPlayers");
+            }
+        }
+
+
         private void RemovePlayerFromServer(ClientDisconnectedEventArgs e)
         {
             if (ConnectedClients.ContainsKey(e.Client.ID))
